@@ -78,7 +78,10 @@ program
                 encryptedData[key] = encrypt(value);
             }
             const newDocRef = envs.doc();
-            await newDocRef.set(encryptedData);
+            await newDocRef.set({
+                name: newEnv,
+                data: encryptedData
+            });
             registerdEnvs[newEnv] = {
                 id: newDocRef.id,
                 path: `./.${newEnv}`,
@@ -115,7 +118,10 @@ program
                 encryptedData[key] = encrypt(value);
             }
             const docRef = envs.doc(registerdEnvs[options.environment]?.id);
-            await docRef.update(encryptedData);
+            await docRef.update({
+                name: options.environment,
+                data: encryptedData
+            });
             console.log('Data updated and encrypted successfully');
         } catch (error) {
             if (error.message === "User force closed the prompt with 0 null") return
@@ -147,14 +153,11 @@ program
                 const encryptedData = docSnap.data();
                 const decryptedData = {};
 
-                // Decrypt the data
-                for (const [key, value] of Object.entries(encryptedData)) {
+                for (const [key, value] of Object.entries(encryptedData.data)) {
                     decryptedData[key] = decrypt(value);
                 }
 
-                // Write the decrypted data to the .env file
                 writeEnvVariables(registerdEnvs[options.environment]?.path, decryptedData);
-
                 console.log('Data retrieved and written to .env file successfully');
             } else {
                 console.log('This env is not saved in storage');
@@ -164,5 +167,7 @@ program
             console.error(error);
         }
     });
+
+
 
 program.parse(process.argv);

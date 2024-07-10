@@ -1,14 +1,6 @@
 {
     "env": {
-        "id": "elUhv3GWJTZ5XW83AHz7",
+        "id": "6Vq3UOO1jlNV6t64c1b4",
         "path": "./.env"
-    },
-    "pa": {
-        "id": "LdveSAsE8MfF0Ep7DQ8L",
-        "path": "./.pa"
-    },
-    "production": {
-        "id": "EPDOtE1131qM7zISxAZ8",
-        "path": "./.production"
     }
 }
