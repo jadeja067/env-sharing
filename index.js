@@ -168,6 +168,23 @@ program
         }
     });
 
-
+program.command('refresh').action(async () => {
+    try {
+        const latestEnvData = {}
+        const snapshot = await envs.get();
+        snapshot.forEach(doc => { 
+            const id = doc.id
+            doc = doc.data()
+            latestEnvData[doc.name] = {
+                id,
+                path: `./.${doc.name}`,
+            }
+        })
+        fs.writeFileSync('./env_manager.json', JSON.stringify(latestEnvData));
+    } catch (error) {
+        if (error.message === "User force closed the prompt with 0 null") return
+        console.error(error);
+    }
+})
 
 program.parse(process.argv);
