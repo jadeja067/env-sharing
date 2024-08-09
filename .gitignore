@@ -1,5 +1,0 @@
-node_modules
-serviceAccountKey.json
-.env
-.env.keys
-.env.*
