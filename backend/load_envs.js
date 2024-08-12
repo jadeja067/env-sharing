@@ -18,9 +18,15 @@ const writeEnvVariables = (filePath, envVars) => {
     fs.writeFileSync(filePath, envContent);
 };
 
-const main = async (type) => {
+const main = async () => {
     try {
-        const docs  = await envs.doc(type).get();
+        let envType = -1 
+        const data = fs.readFileSync(envFile, 'utf8').split('=').map((s, i) => {
+            s = s.trim().replaceAll("'", "")            
+            if (s == 'process.env.NODE_ENV') envType = i+1
+            return s
+        })        
+        const docs = await envs.doc(data[envType]).get();
         const vars = docs.data();        
         writeEnvVariables(envFile, vars);
     } catch (error) {
@@ -28,4 +34,4 @@ const main = async (type) => {
     }
 }
 
-main('development');
+main();
