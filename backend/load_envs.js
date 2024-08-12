@@ -14,14 +14,14 @@ const decrypt = (hash) => {
 };
 
 const writeEnvVariables = (filePath, envVars) => {
-    const envContent = Object.entries(envVars).map(([key, value]) => `env.process.${key}=${decrypt(value)}`).join('\n');
+    const envContent = Object.entries(envVars).map(([key, value]) => `${key}=${decrypt(value)}`).join('\n');
     fs.writeFileSync(filePath, envContent);
 };
 
 const main = async () => {
     try {
         let envType = -1 
-        const data =  []
+        let data =  []
         if (fs.existsSync(envFile)) { 
             data = fs.readFileSync(envFile, 'utf8').split('=').map((s, i) => {
                 s = s.trim().replaceAll("'", "")            

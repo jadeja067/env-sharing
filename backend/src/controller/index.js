@@ -35,6 +35,8 @@ const addEnv = asyncHandler(async (req, res) => {
 });
 
 const getEnvTypes = asyncHandler(async (req, res) => {
+  console.log(process.env.abs);
+  
   res.status(200).json(["development", "production", "staging"])
 });
 
