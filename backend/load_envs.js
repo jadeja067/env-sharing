@@ -9,9 +9,7 @@ const algorithm = process.env.ENCRYPTION_ALGORITHM,
 
 const decrypt = (hash) => {
     const decipher = crypto.createDecipheriv(algorithm, Buffer.from(secretKey), Buffer.from(hash.iv, 'hex'));
-    
     const decrypted = Buffer.concat([decipher.update(Buffer.from(hash.content, 'hex')), decipher.final()]);
-    console.log(decipher, decrypted);
     return decrypted.toString();
 };
 
@@ -23,9 +21,7 @@ const writeEnvVariables = (filePath, envVars) => {
 const main = async (type) => {
     try {
         const docs  = await envs.doc(type).get();
-        
         const vars = docs.data();        
-        console.log(vars);
         writeEnvVariables(envFile, vars);
     } catch (error) {
         console.error(error);
