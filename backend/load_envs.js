@@ -21,12 +21,15 @@ const writeEnvVariables = (filePath, envVars) => {
 const main = async () => {
     try {
         let envType = -1 
-        const data = fs.readFileSync(envFile, 'utf8').split('=').map((s, i) => {
-            s = s.trim().replaceAll("'", "")            
-            if (s == 'process.env.NODE_ENV') envType = i+1
-            return s
-        })        
-        const docs = await envs.doc(data[envType]).get();
+        const data =  []
+        if (fs.existsSync(envFile)) { 
+            data = fs.readFileSync(envFile, 'utf8').split('=').map((s, i) => {
+                s = s.trim().replaceAll("'", "")            
+                if (s == 'process.env.NODE_ENV') envType = i+1
+                return s
+            })        
+        }
+        const docs = await envs.doc(data[envType] || 'development').get();
         const vars = docs.data();        
         writeEnvVariables(envFile, vars);
     } catch (error) {
