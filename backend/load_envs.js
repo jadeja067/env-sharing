@@ -25,7 +25,7 @@ const main = async () => {
         if (fs.existsSync(envFile)) { 
             data = fs.readFileSync(envFile, 'utf8').split('=').map((s, i) => {
                 s = s.trim().replaceAll("'", "")            
-                if (s == 'process.env.NODE_ENV') envType = i+1
+                if (s == 'NODE_ENV') envType = i+1
                 return s
             })        
         }
