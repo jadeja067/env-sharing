@@ -11,8 +11,8 @@ const addEnv = asyncHandler(async (req, res) => {
   // Encrypt the value
   for (const key in payload) payload[key] = envStore.encrypt(payload[key])
   envStore.setDoc(id, payload)
-  envStore.sync()
-  res.status(200).json(data)
+  envStore.sync(id)
+  res.status(200).json({massage: "successfully Updated"})
 });
 
 const getEnvTypes = asyncHandler(async (req, res) => {

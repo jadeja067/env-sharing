@@ -7,26 +7,6 @@ import redis from 'redis'
 
 config({ path: './.env.keys' });
 
-// admin.initializeApp({
-//     credential: admin.credential.cert({
-//         "type": process.env.TYPE,
-//         "project_id": process.env.PROJECT_ID,
-//         "private_key_id": process.env.PRIVATE_KEY_ID,
-//         "private_key": process.env.PRIVATE_KEY,
-//         "client_email": process.env.CLIENT_EMAIL,
-//         "client_id": process.env.CLIENT_ID,
-//         "auth_uri": process.env.AUTH_URI,
-//         "token_uri": process.env.TOKEN_URI,
-//         "auth_provider_x509_cert_url": process.env.AUTH_PROVIDER_X509_CERT_URL,
-//         "client_x509_cert_url": process.env.CLIENT_X509_CERT_URL,
-//         "universe_domain": process.env.UNIVERSE_DOMAIN
-//     }),
-//     projectId: process.env.PROJECT_ID
-// });
-
-// const db = getFirestore();
-// const envs = db.collection('envs');
-
 class Firestore {
     db;
     collection;
@@ -54,16 +34,15 @@ class Firestore {
         this.collection = this.db.collection(name);
     }
     async getDoc(type) {
-        const docs = await envs.doc(type).get();
+        const docs = await this.collection.doc(type).get();
         return docs.data();
     }
     async setDoc(type, payload) {
-        const docRef = envs.doc(type);
+        const docRef = this.collection.doc(type);
         const data = await docRef.update(payload);
         return data;
     }
 }
-
 
 class Redis extends Firestore {
     client;
@@ -146,7 +125,7 @@ class envsHandler extends Redis {
     encrypt(text) {
         try {
             const iv = crypto.randomBytes(16);
-            const cipher = crypto.createCipheriv(algorithm, Buffer.from(secretKey), iv);
+            const cipher = crypto.createCipheriv(this.algorithm, Buffer.from(this.secretKey), iv);
             const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
             return {
                 iv: iv.toString('hex'),
@@ -173,27 +152,27 @@ class envsHandler extends Redis {
         try {
             await this.getEnvType()
             let vars = await this.get(this.type)
-
             if (!vars) {
                 await this.sync(this.type)
-            }
-            this.write(vars);
+            } else this.write(vars);
         } catch (error) {
             console.log(error);
         }
     }
-    async sync() {
+    async sync(type) {
+        console.log(type);
+        
         try {
-            let vars = await this.get(this.type)
-            if (!vars || !this.updateStatus[this.type]) {
-                vars = await this.getDoc()
-                await this.set(this.type, vars)
-            }
+            await this.getEnvType()
+            const vars = await this.getDoc(type)
+            await this.set(this.type, vars)
             this.write(vars);
         } catch (error) {
             console.log(error);
         }
     }
 }
+
 const envStore = new envsHandler()
+
 export default envStore
