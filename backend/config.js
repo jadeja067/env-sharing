@@ -101,6 +101,8 @@ class envsHandler extends Redis {
     async write(envVars, filePath = this.envFile) {
         let envContent = Object.entries(envVars).map(([key, value]) => `${key}=${this.decrypt(value)}`).join('\n');
         envContent = envContent.concat(`\nNODE_ENV=${this.type}`)
+        console.log(`writing from ${this.type} to .env`);
+        
         fs.writeFileSync(filePath, envContent);
     };
 
@@ -159,14 +161,14 @@ class envsHandler extends Redis {
             console.log(error);
         }
     }
-    async sync(type) {
-        console.log(type);
-        
+    async sync(type) {        
         try {
             await this.getEnvType()
             const vars = await this.getDoc(type)
             await this.set(this.type, vars)
-            this.write(vars);
+            if (this.type == type) {
+                this.write(vars);
+            }
         } catch (error) {
             console.log(error);
         }
