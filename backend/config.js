@@ -3,48 +3,129 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { config } from 'dotenv';
 import crypto from 'crypto';
 import fs from 'fs';
-import { setVars, getVars } from './redis.js'
+import redis from 'redis'
 
 config({ path: './.env.keys' });
 
-admin.initializeApp({
-    credential: admin.credential.cert({
-        "type": process.env.TYPE,
-        "project_id": process.env.PROJECT_ID,
-        "private_key_id": process.env.PRIVATE_KEY_ID,
-        "private_key": process.env.PRIVATE_KEY,
-        "client_email": process.env.CLIENT_EMAIL,
-        "client_id": process.env.CLIENT_ID,
-        "auth_uri": process.env.AUTH_URI,
-        "token_uri": process.env.TOKEN_URI,
-        "auth_provider_x509_cert_url": process.env.AUTH_PROVIDER_X509_CERT_URL,
-        "client_x509_cert_url": process.env.CLIENT_X509_CERT_URL,
-        "universe_domain": process.env.UNIVERSE_DOMAIN
-    }),
-    projectId: process.env.PROJECT_ID
-});
+// admin.initializeApp({
+//     credential: admin.credential.cert({
+//         "type": process.env.TYPE,
+//         "project_id": process.env.PROJECT_ID,
+//         "private_key_id": process.env.PRIVATE_KEY_ID,
+//         "private_key": process.env.PRIVATE_KEY,
+//         "client_email": process.env.CLIENT_EMAIL,
+//         "client_id": process.env.CLIENT_ID,
+//         "auth_uri": process.env.AUTH_URI,
+//         "token_uri": process.env.TOKEN_URI,
+//         "auth_provider_x509_cert_url": process.env.AUTH_PROVIDER_X509_CERT_URL,
+//         "client_x509_cert_url": process.env.CLIENT_X509_CERT_URL,
+//         "universe_domain": process.env.UNIVERSE_DOMAIN
+//     }),
+//     projectId: process.env.PROJECT_ID
+// });
 
-const db = getFirestore();
-const envs = db.collection('envs');
+// const db = getFirestore();
+// const envs = db.collection('envs');
 
-class envsHandler {
+class Firestore {
+    db;
+    collection;
+    constructor(envType) {
+        admin.initializeApp({
+            credential: admin.credential.cert({
+                "type": process.env.TYPE,
+                "project_id": process.env.PROJECT_ID,
+                "private_key_id": process.env.PRIVATE_KEY_ID,
+                "private_key": process.env.PRIVATE_KEY,
+                "client_email": process.env.CLIENT_EMAIL,
+                "client_id": process.env.CLIENT_ID,
+                "auth_uri": process.env.AUTH_URI,
+                "token_uri": process.env.TOKEN_URI,
+                "auth_provider_x509_cert_url": process.env.AUTH_PROVIDER_X509_CERT_URL,
+                "client_x509_cert_url": process.env.CLIENT_X509_CERT_URL,
+                "universe_domain": process.env.UNIVERSE_DOMAIN
+            }),
+            projectId: process.env.PROJECT_ID
+        });
+        this.db = getFirestore();
+        this.setCollection()
+    }
+    setCollection(name = 'envs') {
+        this.collection = this.db.collection(name);
+    }
+    async getDoc(type) {
+        const docs = await envs.doc(type).get();
+        return docs.data();
+    }
+    async setDoc(type, payload) {
+        const docRef = envs.doc(type);
+        const data = await docRef.update(payload);
+        return data;
+    }
+}
+
+
+class Redis extends Firestore {
+    client;
+    constructor(args = {
+        port: 6379,
+        host: '127.0.0.1',
+    }) {
+        super()
+        this.client = redis.createClient(args)
+    }
+    async connect() {
+        await this.client.connect();
+        this.client.on('error', (err) => {
+            console.error('Redis client error:', err);
+        });
+    }
+    async set(key, data) {
+        if (!key || !data) throw new Error("Insufficient data")
+        try {
+            await this.connect()
+            const res = await this.client.set(key, JSON.stringify(data));
+            if (res) console.log('Redis data is updated successfully');
+            return res;
+        } finally {
+            await this.client.quit();
+        }
+    };
+    async get(key) {
+        if (!key) throw new Error("Please provide a key");
+        try {
+            await this.connect()
+            const res = await this.client.get(key);
+            if (res) console.log('Redis data is retrived successfully');
+            return JSON.parse(res);
+        } finally {
+            await this.client.quit();
+        }
+    };
+}
+
+class envsHandler extends Redis {
+    algorithm;
+    secretKey;
+    envFile;
+    type;
+    updateStatus;
+
     constructor() {
+        super()
         this.algorithm = process.env.ENCRYPTION_ALGORITHM
         this.secretKey = process.env.ENCRYPTION_KEY
         this.envFile = process.env.ENVIRONMENT_FILE_PATH
         this.type = undefined
-        this.updateStatus = {
-            development: true,
-            production: true,
-            staging: true
-        }
     }
-    async writeEnvVariables(envVars, filePath = this.envFile) {
+
+    async write(envVars, filePath = this.envFile) {
         let envContent = Object.entries(envVars).map(([key, value]) => `${key}=${this.decrypt(value)}`).join('\n');
         envContent = envContent.concat(`\nNODE_ENV=${this.type}`)
         fs.writeFileSync(filePath, envContent);
     };
-    async readEnvVariables(filePath = this.envVars) {
+
+    async read(filePath = this.envVars) {
         if (fs.existsSync(filePath)) {
             const envContent = fs.readFileSync(filePath, 'utf8').split(/\n/)
             return envContent
@@ -53,19 +134,37 @@ class envsHandler {
     }
 
     decrypt(hash) {
-        const decipher = crypto.createDecipheriv(this.algorithm, Buffer.from(this.secretKey), Buffer.from(hash.iv, 'hex'));
-        const decrypted = Buffer.concat([decipher.update(Buffer.from(hash.content, 'hex')), decipher.final()]);
-        return decrypted.toString();
+        try {
+            const decipher = crypto.createDecipheriv(this.algorithm, Buffer.from(this.secretKey), Buffer.from(hash.iv, 'hex'));
+            const decrypted = Buffer.concat([decipher.update(Buffer.from(hash.content, 'hex')), decipher.final()]);
+            return decrypted.toString();
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    encrypt(text) {
+        try {
+            const iv = crypto.randomBytes(16);
+            const cipher = crypto.createCipheriv(algorithm, Buffer.from(secretKey), iv);
+            const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
+            return {
+                iv: iv.toString('hex'),
+                content: encrypted.toString('hex')
+            };
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     async getEnvType(filePath = this.envFile) {
-        const data = await this.readEnvVariables(filePath)
+        const data = await this.read(filePath)
         data.forEach((s, i) => {
             s = s.trim().replaceAll("'", "")
             if (s == 'NODE_ENV=production' || s == 'NODE_ENV=development' || s == 'NODE_ENV=staging') {
                 this.type = s.split('=')[1]
                 return
-            }else this.type='development'
+            } else this.type = 'development'
         })
         return this.type
     }
@@ -73,22 +172,28 @@ class envsHandler {
     async start() {
         try {
             await this.getEnvType()
-            let vars = await getVars(this.type)
+            let vars = await this.get(this.type)
 
-            if (!vars || !this.updateStatus[this.type]) {
-                const docs = await envs.doc(this.type).get();
-                vars = docs.data();
-                await setVars(this.type, vars)
-                this.updateStatus[this.type] = true
+            if (!vars) {
+                await this.sync(this.type)
             }
-            this.writeEnvVariables(vars);
+            this.write(vars);
         } catch (error) {
-            console.log(91, error);
+            console.log(error);
+        }
+    }
+    async sync() {
+        try {
+            let vars = await this.get(this.type)
+            if (!vars || !this.updateStatus[this.type]) {
+                vars = await this.getDoc()
+                await this.set(this.type, vars)
+            }
+            this.write(vars);
+        } catch (error) {
+            console.log(error);
         }
     }
 }
-
 const envStore = new envsHandler()
-
-export { envs }
 export default envStore
