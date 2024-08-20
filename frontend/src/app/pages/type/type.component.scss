@@ -1,0 +1,12 @@
+table {
+  border-radius: 10px;
+  tr {
+    &:not(:last-child) {
+      border-bottom: 1px solid rgb(128, 128, 128, 0.2);
+    }
+    td,
+    th {
+      padding: 10px 50px;
+    }
+  }
+}

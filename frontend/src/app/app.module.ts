@@ -4,9 +4,10 @@ import { HttpClientModule } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ReactiveFormsModule } from '@angular/forms';
+import { TypeComponent } from './pages/type/type.component';
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [AppComponent, TypeComponent],
   imports: [
     BrowserModule,
     AppRoutingModule,

@@ -48,6 +48,13 @@ class Firestore {
         const data = await docRef.update(payload);
         return data;
     }
+    async removeDocField(type, field) {
+        const docRef = this.collection.doc(type);
+        const deleteDoc = await docRef.update({
+            [field]: admin.firestore.FieldValue.delete()
+        });        
+        return deleteDoc;
+    }
 }
 
 class Redis extends Firestore {

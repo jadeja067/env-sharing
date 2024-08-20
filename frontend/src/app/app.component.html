@@ -1,17 +1,8 @@
-<div class="w-screen h-screen bg-slate-300 flex items-center justify-center">
-    <div class="bg-white p-6  min-w-[30%]">
-        <form [formGroup]="form" *ngIf="!isLoading" (ngSubmit)="submit()" class="flex items-center justify-center flex-col gap-3 w-full">
-            <h1 class="font-bold text-2xl">Add Environment variable</h1>
-            <hr class="w-full my-2">
-            <input type="text" class="p-2 border w-full focus:outline-slate-300 rounded-md" formControlName="key" placeholder="key">
-            <input type="text" class="p-2 border w-full focus:outline-slate-300 rounded-md" formControlName="value" placeholder="value">
-            <select class="p-2 border w-full focus:outline-slate-300 rounded-md" formControlName="type">
-                <option *ngFor="let item of types" selected [value]="item">{{item}}</option>
-            </select>
-            <button class="px-4 py-2 bg-blue-600 text-white rounde-md w-full disabled:text-slate-400" [disabled]="!form.valid">Submit</button>
-        </form>
-        <div *ngIf="isLoading" class="w-full h-full">
-            Loading...
-        </div>
-    </div>
+<div class="flex gap-4 bg-white p-4 h-auto items-center justify-center text-xl font-bold" >
+    <a class="hover:text-blue-600 hover:underline" href="/development">Development</a>
+    <a class="hover:text-blue-600 hover:underline" href="/staging">Staging</a>
+    <a class="hover:text-blue-600 hover:underline" href="/production">Production</a>
+</div>
+<div class="w-screen h-screen bg-slate-50">
+    <router-outlet></router-outlet>
 </div>
