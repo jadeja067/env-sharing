@@ -3,7 +3,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { config } from "dotenv";
 import crypto from "crypto";
 import fs from "fs";
-import redis from "redis";
+// import redis from "redis";
 import { fileURLToPath } from "url";
 import path from "path";
 const __filename = fileURLToPath(import.meta.url);
@@ -54,54 +54,55 @@ class Firestore {
   }
 }
 
-class Redis extends Firestore {
-  client;
-  constructor(
-    args = {
-      port: 6379,
-      host: "127.0.0.1",
-    }
-  ) {
-    super();
-    this.client = redis.createClient(args);
-  }
-  async connect() {
-    await this.client.connect();
-    this.client.on("error", (err) => {
-      console.error("Redis client error:", err);
-    });
-  }
-  async set(key, data) {
-    if (!key || !data) throw new Error("Insufficient data");
-    try {
-      await this.connect();
-      const res = await this.client.set(key, JSON.stringify(data));
-      if (res) console.log("Redis data is updated successfully");
-      return res;
-    } catch (error) {
-      console.log(error?.message || "REDIS ERROR");
-      return;
-    } finally {
-      await this.client.quit();
-    }
-  }
-  async get(key) {
-    if (!key) throw new Error("Please provide a key");
-    try {
-      await this.connect();
-      const res = await this.client.get(key);
-      if (res) console.log("Redis data is retrived successfully");
-      return JSON.parse(res);
-    } catch (error) {
-      console.log(error?.message || "REDIS ERROR");
-      return;
-    } finally {
-      await this.client.quit();
-    }
-  }
-}
+// class Redis extends Firestore {
+//   client;
+//   constructor(
+//     args = {
+//       port: 6379,
+//       host: "127.0.0.1",
+//     }
+//   ) {
+//     super();
+//     this.client = redis.createClient(args);
+//   }
+//   async connect() {
+//     await this.client.connect();
+//     this.client.on("error", () => {
+//       console.error("REDIS ERROR: can't connect to server");
+//     });
+//     return;
+//   }
+//   async set(key, data) {
+//     if (!key || !data) throw new Error("Insufficient data");
+//     try {
+//       await this.connect();
+//       const res = await this.client.set(key, JSON.stringify(data));
+//       if (res) console.log("Redis data is updated successfully");
+//       return res;
+//     } catch (error) {
+//       console.log(82, error?.message || "REDIS ERROR");
+//     } finally {
+//       if (this.client.isOpen) await this.client.quit();
+//       return;
+//     }
+//   }
+//   async get(key) {
+//     if (!key) throw new Error("Please provide a key");
+//     try {
+//       await this.connect();
+//       const res = await this.client.get(key);
+//       if (res) console.log("Redis data is retrived successfully");
+//       return JSON.parse(res);
+//     } catch (error) {
+//       console.log(error?.message || "REDIS ERROR");
+//     } finally {
+//       if (this.client.isOpen) await this.client.quit();
+//       return;
+//     }
+//   }
+// }
 
-class envsHandler extends Redis {
+class envsHandler extends Firestore {
   algorithm;
   secretKey;
   envFile;
@@ -125,7 +126,7 @@ class envsHandler extends Redis {
 
   async read(filePath = this.envVars) {
     if (fs.existsSync(filePath)) {
-      const envContent = fs.readFileSync(filePath, "utf8").split(/\n/);
+      const envContent = fs.readFileSync(path.join(__dirname, filePath), "utf8").split(/\n/);
       return envContent;
     }
     return;
@@ -168,10 +169,13 @@ class envsHandler extends Redis {
 
   async start() {
     try {
-      let vars = await this.get(this.type);
-      if (!vars) {
-        await this.sync(this.type);
-      } else this.write(vars);
+      /* Redis implementation */
+      // let vars = await this.get(this.type);
+      // if (!vars) {
+      //   await this.sync(this.type);
+      // } else this.write(vars);
+      /* Redis implementation over */
+      await this.sync(this.type);
     } catch (error) {
       console.log(error);
     }
@@ -179,7 +183,8 @@ class envsHandler extends Redis {
   async sync(type) {
     try {
       const vars = await this.getDoc(type);
-      await this.set(this.type, vars);
+      /* Redis implementation */
+      // this.set(this.type, vars);
       if (this.type == type) {
         this.write(vars);
       }

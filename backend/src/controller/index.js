@@ -39,9 +39,7 @@ const deleteEnv = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { key } = req.query;
-    const data = await envStore.removeDocField(id, key);
-    console.log(data);
-
+    await envStore.removeDocField(id, key);
     envStore.sync(id);
     res.json({
       success: true,

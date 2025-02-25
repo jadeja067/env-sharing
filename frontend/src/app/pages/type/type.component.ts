@@ -56,7 +56,6 @@ export class TypeComponent implements OnInit {
     await this.http
       .delete(`http://localhost:3300/${this.type}?key=${id}`)
       .toPromise();
-    
     await this.fetchENv();
   }
   openModel() {
@@ -75,6 +74,5 @@ export class TypeComponent implements OnInit {
     this.openModel();
     this.form.reset();
     await this.fetchENv();
-
   }
 }
