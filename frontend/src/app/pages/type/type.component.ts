@@ -28,7 +28,7 @@ export class TypeComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    this.route.params.subscribe((params) => (this.type = params?.id || ''));
+    this.route.params.subscribe((params: any) => (this.type = params?.id || ''));
     await this.fetchENv();
     const data: any = await this.http.get('http://localhost:3300').toPromise();
     this.types = data;
@@ -42,7 +42,7 @@ export class TypeComponent implements OnInit {
     this.data = data;
   }
   get getData() {
-    return Object.entries(this.data);
+    return Object.entries(this.data || {});
   }
   async update(id: string) {
     this.form.controls['key'].setValue(id);

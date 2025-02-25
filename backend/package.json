@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node load_envs.js && nodemon index.js",
+    "fetch-env": "node load_envs.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
